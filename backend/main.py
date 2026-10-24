@@ -1,80 +1,99 @@
-from fastapi import FastAPI, HTTPException, status, Request
+from fastapi import FastAPI, HTTPException, Request, Depends, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from schemas import PostCreate, PostResponse
+from schemas import ListingCreate, ListingResponse
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from typing import Annotated
+import models
+from database import Base, engine, get_db
 
 app = FastAPI()
 # noinspection bad-argument-type
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['http://localhost:3000'],
+    allow_origins=['http://localhost:5173'],
     allow_methods=['*'],
     allow_headers=['*']
 )
 
-
-#dummy data
-posts: list[dict] = [
-    {
-        "id": 1,
-        "author": "Андрей санстрайк",
-        "title": "Ищу команду на хакатон",
-        "content": "Огоооооооооооооооооооооооооооооооооооооооооооооо",
-        "date_posted": "April 20, 2025",
-        "known_languages": ['Python', 'C++', 'Assembler']
-    },
-    {
-        "id": 2,
-        "author": "Джон Питон",
-        "title": "Ищу команду на Олимпиаду",
-        "content": "Хочу команду найду туда сюда я ваще крутой классный всё в соло закрою.",
-        "date_posted": "April 20, 2025",
-        "known_languages": ['Python', 'C++', 'Assembler']
-    },
-]
-
+#------------------------------
+#----------GETTING-------------
+#------------------------------
 @app.get('/')
-def home():
-    return {'msg': 'ale)))), kto doma?'}
-    #мб в начальной странице сделать выбор типо куда ищете Хакатон олимпиаду и направить на нужную страницу
-
 @app.get('/health')
 def health():
     return {'health': 'ok'}
 
-@app.get('/posts/{post_id}')
-def post_page(post_id):
-    post_id: int
-    for post in posts:
-        if post.get('id') == post_id:
-            return post
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+@app.get('/listings/{listing_id}', response_model=ListingResponse)
+def get_one_listing(listing_id: int, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(select(models.Listing).where(models.Listing.id == listing_id))
+    listing = result.scalars().first()
+    if not listing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
+    else:
+        return listing
+
+@app.get('/users/{user_id}/listings', response_model=list[ListingResponse])
+def get_users_listings(user_id: int, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(select(models.User).where(models.User.id==user_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='user doesnt exist')
+
+    result = db.execute(select(models.Listing).where(models.Listing.author_id==user_id))
+    user_listings = result.scalars().all()
+    return user_listings
 
 
-@app.get('/posts', response_model=list[PostResponse])
-def get_posts():
-    return posts
+@app.get('/listings', response_model=list[ListingResponse])
+def get_listings(db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(select(models.Listing))
+    listings = result.scalars().all()
+    return listings
+
+
+#----------------------------------------
+#------------POSTING---------------------
+#----------------------------------------
 
 @app.post(
-    "/api/posts",
-    response_model=PostResponse,
+    "/listings",
+    response_model=ListingResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_post(post: PostCreate):
-    new_id = max(p["id"] for p in posts) + 1 if posts else 1
-    new_post = {
-        "id": new_id,
-        "author": post.author,
-        "title": post.title,
-        "content": post.content,
-        "date_posted": "April 23, 2025",
-        "known_languages": ["Python"]
-    }
-    posts.append(new_post)
-    return new_post
+def create_listing(listing: ListingCreate, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(select(models.Listing).where(models.Listing.id == listing.id))
+    existing_listing = result.scalars().first()
 
+    if existing_listing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='same listing already exist'
+        )
+
+    new_listing = models.Listing(
+        author_id=listing.author_id,
+        type=listing.type,
+        role_focus=listing.role_focus,
+        bio=listing.bio,
+        format=listing.format,
+        status=listing.status,
+        hackathons_count=listing.hackathons_count,
+    )
+    db.add(new_listing)
+    db.commit()
+    db.refresh(new_listing)
+
+    return new_listing
+
+
+
+#-------------------------------------------
+# ---------------HANDLERS-------------------
+#-------------------------------------------
 #я чисто с туторила эти оба хендлера скопировал
 @app.exception_handler(StarletteHTTPException)
 def general_http_exception_handler(request: Request, exception: StarletteHTTPException):
@@ -84,14 +103,13 @@ def general_http_exception_handler(request: Request, exception: StarletteHTTPExc
         else "An error occurred. Please check your request and try again."
     )
 
-    if request.url.path.startswith("/api"):
-        return JSONResponse(
-            status_code=exception.status_code,
-            content={"detail": message},
-        )
+    return JSONResponse(
+        status_code=exception.status_code,
+        content={"detail": message},
+    )
     #html я пока не знаю чё там как там поэтому пока чисто с api
 
-
+#dead code at the moment
 @app.exception_handler(RequestValidationError)
 def validation_exception_handler(request: Request, exception: RequestValidationError):
     if request.url.path.startswith("/api"):
