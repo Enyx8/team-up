@@ -15,9 +15,9 @@ class User(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, index=True, nullable=False,
                                      server_default=func.gen_random_uuid())
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String(255), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(150), nullable=False)
-    university: Mapped[int] = mapped_column(Integer)
+    university_id: Mapped[int] = mapped_column(Integer)
     course: Mapped[int] = mapped_column(SmallInteger)
     telegram: Mapped[int] = mapped_column(String(150))
     avatar_color: Mapped[str] = mapped_column(String(7))
@@ -37,27 +37,27 @@ class Universities(Base):
 class Listing(Base):
     __tablename__ = 'listings'
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, nullable=False, default=func.gen_random_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, nullable=False, server_default=func.gen_random_uuid())
     author_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"),nullable=False)
 
-    LISTING_TYPES = ["seeking_team, seeking_members"]
-    type: Mapped[str] = mapped_column(ENUM(*LISTING_TYPES, name='listing_type', nullable=False, create_type=False))
+    LISTING_TYPES = ["seeking_team", "seeking_members"]
+    type: Mapped[str] = mapped_column(ENUM(*LISTING_TYPES, name='listing_type', create_type=False), nullable=False)
 
-    ROLES = ["backend", "frontend", "fullstack", "mobile", "ml", "data", "devops", "qa", "design, pm"]
-    role_focus: Mapped[str] = mapped_column(ENUM(*ROLES), name='role_focus', create_type=False)
+    ROLES = ["backend", "frontend", "fullstack", "mobile", "ml", "data", "devops", "qa", "design", "pm"]
+    role_focus: Mapped[str] = mapped_column(ENUM(*ROLES, name='role_focus', create_type=False))
 
     bio: Mapped[str] = mapped_column(Text)
 
     LISTING_FORMATS = ["online", "offline"]
-    listing_format: Mapped[str] = mapped_column(ENUM(*LISTING_FORMATS), name='listing_format', nullable=False,
-                                                create_type=False, server_default='online')
+    format: Mapped[str] = mapped_column(ENUM(*LISTING_FORMATS, name='listing_format',
+                                                create_type=False), server_default='online', nullable=False)
 
     STATUSES = ["active", "closed"]
-    status: Mapped[str] = mapped_column(ENUM(*STATUSES), name='status', create_type=False,
-                                        nullable=False, server_default='active')
+    status: Mapped[str] = mapped_column(ENUM(*STATUSES, name='status', create_type=False),
+                                        server_default='active', nullable=False)
 
     hackathons_count: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default='0')
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 class Messages(Base):
     __tablename__ = 'messages'
@@ -67,7 +67,7 @@ class Messages(Base):
     listing_id: Mapped[UUID] = mapped_column(ForeignKey("listings.id"))
     content: Mapped[str] = mapped_column(Text, nullable=False)
     is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default='false')
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 class ListingRoles(Base):
     __tablename__ = 'listing_roles'
@@ -76,7 +76,7 @@ class ListingRoles(Base):
     listing_id: Mapped[UUID] = mapped_column(ForeignKey('listings.id'), nullable=False)
 
     ROLES = ["backend", "frontend", "fullstack", "mobile", "ml", "data", "devops", "qa", "design, pm"]
-    role_focus: Mapped[str] = mapped_column(ENUM(*ROLES), name='role_focus', nullable=False, create_type=False)
+    role_focus: Mapped[str] = mapped_column(ENUM(*ROLES, name='role_focus', create_type=False), nullable=False)
 
     slots_needed: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default='1')
 
