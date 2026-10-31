@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import FastAPI, HTTPException, Request, Depends, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -28,7 +30,7 @@ def health():
     return {'health': 'ok'}
 
 @app.get('/listings/{listing_id}', response_model=ListingResponse)
-def get_one_listing(listing_id: int, db: Annotated[Session, Depends(get_db)]):
+def get_one_listing(listing_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]):
     result = db.execute(select(models.Listing).where(models.Listing.id == listing_id))
     listing = result.scalars().first()
     if not listing:
@@ -37,7 +39,7 @@ def get_one_listing(listing_id: int, db: Annotated[Session, Depends(get_db)]):
         return listing
 
 @app.get('/users/{user_id}/listings', response_model=list[ListingResponse])
-def get_users_listings(user_id: int, db: Annotated[Session, Depends(get_db)]):
+def get_users_listings(user_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]):
     result = db.execute(select(models.User).where(models.User.id==user_id))
     user = result.scalars().first()
     if not user:
@@ -65,15 +67,6 @@ def get_listings(db: Annotated[Session, Depends(get_db)]):
     status_code=status.HTTP_201_CREATED,
 )
 def create_listing(listing: ListingCreate, db: Annotated[Session, Depends(get_db)]):
-    result = db.execute(select(models.Listing).where(models.Listing.id == listing.id))
-    existing_listing = result.scalars().first()
-
-    if existing_listing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='same listing already exist'
-        )
-
     new_listing = models.Listing(
         author_id=listing.author_id,
         type=listing.type,
