@@ -17,9 +17,9 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(150), nullable=False)
-    university_id: Mapped[int] = mapped_column(Integer)
+    university_id: Mapped[int] = mapped_column(ForeignKey("universities.id"))
     course: Mapped[int] = mapped_column(SmallInteger)
-    telegram: Mapped[int] = mapped_column(String(150))
+    telegram: Mapped[str] = mapped_column(String(150))
     avatar_color: Mapped[str] = mapped_column(String(7))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False,
                                                  default=func.now())
@@ -27,7 +27,7 @@ class User(Base):
 class Universities(Base):
     __tablename__ = 'universities'
 
-    id: Mapped[int] = mapped_column(ForeignKey("users.university_id"), primary_key=True, nullable=False,
+    id: Mapped[int] = mapped_column(primary_key=True, nullable=False,
                                     server_default=text("nextval('universities_id_seq'::regclass)"))
     name: Mapped[str] = mapped_column(String(100))
     city: Mapped[str] = mapped_column(String(100))
@@ -53,7 +53,7 @@ class Listing(Base):
                                                 create_type=False), server_default='online', nullable=False)
 
     STATUSES = ["active", "closed"]
-    status: Mapped[str] = mapped_column(ENUM(*STATUSES, name='status', create_type=False),
+    status: Mapped[str] = mapped_column(ENUM(*STATUSES, name='listing_status', create_type=False),
                                         server_default='active', nullable=False)
 
     hackathons_count: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default='0')
@@ -72,10 +72,10 @@ class Messages(Base):
 class ListingRoles(Base):
     __tablename__ = 'listing_roles'
 
-    id: Mapped[UUID] = mapped_column(primary_key=True, nullable=False, server_default=func.gen_ranomd_uuid())
+    id: Mapped[UUID] = mapped_column(primary_key=True, nullable=False, server_default=func.gen_random_uuid())
     listing_id: Mapped[UUID] = mapped_column(ForeignKey('listings.id'), nullable=False)
 
-    ROLES = ["backend", "frontend", "fullstack", "mobile", "ml", "data", "devops", "qa", "design, pm"]
+    ROLES = ["backend", "frontend", "fullstack", "mobile", "ml", "data", "devops", "qa", "design", "pm"]
     role_focus: Mapped[str] = mapped_column(ENUM(*ROLES, name='role_focus', create_type=False), nullable=False)
 
     slots_needed: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default='1')
@@ -83,14 +83,14 @@ class ListingRoles(Base):
 class ListingSkills(Base):
     __tablename__ = 'listing_skills'
 
-    listing_id: Mapped[UUID] = mapped_column(ForeignKey('lisings.id'), primary_key=True, nullable=False)
+    listing_id: Mapped[UUID] = mapped_column(ForeignKey('listings.id'), primary_key=True, nullable=False)
     skill_id: Mapped[int] = mapped_column(ForeignKey('skills.id'), primary_key=True, nullable=False)
 
 class UserSkills(Base):
     __tablename__ = 'user_skills'
 
     user_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'), primary_key=True, nullable=False)
-    skill_id: Mapped[UUID] = mapped_column(ForeignKey('skills.id'), primary_key=True, nullable=False)
+    skill_id: Mapped[int] = mapped_column(ForeignKey('skills.id'), primary_key=True, nullable=False)
 
 class Skills(Base):
     __tablename__ = 'skills'
