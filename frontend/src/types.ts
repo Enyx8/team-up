@@ -31,7 +31,7 @@ export type ToastMessage = {
 
 export type FiltersState = {
   search: string
-  stack: string
+  stacks: string[]
   university: string
   format: string
   sort: SortOption

@@ -1,15 +1,14 @@
 import type { Listing } from '../types'
 
-export const STACK_OPTIONS = [
-  'React',
-  'TypeScript',
-  'Python',
-  'Figma',
-  'Node.js',
-  'Machine Learning',
-  'Flutter',
-  'Product',
+export const STACK_GROUPS = [
+  { title: 'Фронтенд', items: ['React', 'TypeScript', 'Flutter'] },
+  { title: 'Бэкенд', items: ['Python', 'Node.js'] },
+  { title: 'Базы данных', items: [] as string[], note: 'В текущих анкетах нет отдельного тега базы данных.' },
+  { title: 'Аналитика', items: ['Machine Learning'] },
+  { title: 'Дизайн', items: ['Figma', 'Product'] },
 ] as const
+
+export const STACK_OPTIONS = STACK_GROUPS.flatMap((group) => group.items)
 
 export const UNIVERSITY_OPTIONS = [
   'ВШЭ',
