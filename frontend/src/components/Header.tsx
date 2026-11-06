@@ -1,35 +1,73 @@
-import { BrandMark } from './Icons'
+import type { DiscoverView } from '../types'
 
 type HeaderProps = {
+  view: DiscoverView
+  login: string | null
+  onViewChange: (view: DiscoverView) => void
   onLogin: () => void
+  onRegister: () => void
+  onLogout: () => void
   onCreate: () => void
 }
 
-export function Header({ onLogin, onCreate }: HeaderProps) {
+export function Header({ view, login, onViewChange, onLogin, onRegister, onLogout, onCreate }: HeaderProps) {
   return (
-    <header className="site-header">
-      <div className="container nav-inner">
-        <a className="brand" href="#top" aria-label="Dream-Team — на главную">
-          <span className="brand-mark" aria-hidden="true">
-            <BrandMark />
-          </span>
-          <span>
-            dream<em>-team</em>
-          </span>
-        </a>
-        <nav className="nav-links" aria-label="Главная навигация">
-          <a href="#discover">Найти команду</a>
-          <a href="#how-it-works">Как это работает</a>
-          <a href="#community">Сообщество</a>
-        </nav>
-        <div className="nav-actions">
-          <button className="nav-login" type="button" onClick={onLogin}>
-            Войти
-          </button>
-          <button className="button button-purple" type="button" onClick={onCreate}>
-            Создать анкету <span aria-hidden="true">↗</span>
-          </button>
+    <header className="mast">
+      <div className="mast-body">
+        <div className="mast-title">
+          <a className="wordmark" href="#discover" aria-label="Dream-Team — к каталогу">
+            <span className="wordmark-dream">dream</span>
+            <span className="wordmark-rule" aria-hidden="true" />
+            <span className="wordmark-team">team</span>
+          </a>
+          <div className="mast-actions">
+            {login ? (
+              <>
+                <span className="account-name">{login}</span>
+                <button className="account-register" type="button" onClick={onLogout}>
+                  Выйти
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="account-login" type="button" onClick={onLogin}>
+                  <span className="account-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 16 16">
+                      <circle cx="8" cy="5.2" r="2.4" fill="currentColor" />
+                      <path d="M3.2 13.2c.6-2.2 2.4-3.3 4.8-3.3s4.2 1.1 4.8 3.3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                  Войти
+                </button>
+                <button className="account-register" type="button" onClick={onRegister}>
+                  Зарегистрироваться
+                </button>
+              </>
+            )}
+            <button className="cta" type="button" onClick={onCreate}>
+              Создать анкету
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
         </div>
+        <nav className="mast-nav" aria-label="Кого искать">
+          <button
+            type="button"
+            aria-pressed={view === 'teams'}
+            onClick={() => onViewChange('teams')}
+          >
+            Найти команду
+          </button>
+          <button
+            type="button"
+            aria-pressed={view === 'people'}
+            onClick={() => onViewChange('people')}
+          >
+            Ищу людей
+          </button>
+        </nav>
       </div>
     </header>
   )

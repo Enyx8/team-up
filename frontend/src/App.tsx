@@ -1,17 +1,15 @@
 import { useMemo, useState } from 'react'
+import { AuthDialog } from './components/AuthDialog'
 import { CreateListingModal } from './components/CreateListingModal'
-import { Footer } from './components/Footer'
 import { Header } from './components/Header'
-import { Hero } from './components/Hero'
 import { ToastRegion } from './components/ToastRegion'
-import { TrustStrip } from './components/TrustStrip'
 import { listings as demoListings } from './data/demoListings'
 import { DiscoverPage } from './pages/DiscoverPage'
 import type { DiscoverView, FiltersState, Listing, ListingKind, ToastMessage } from './types'
 
 const emptyFilters: FiltersState = {
   search: '',
-  stack: '',
+  stacks: [],
   university: '',
   format: '',
   sort: 'newest',
@@ -23,8 +21,10 @@ function matchesListing(item: Listing, view: DiscoverView, filters: FiltersState
   if (filters.university && item.university !== filters.university) return false
   if (filters.format && item.format !== filters.format) return false
   if (
-    filters.stack &&
-    !item.skills.some((skill) => skill.toLowerCase().includes(filters.stack.toLowerCase()))
+    filters.stacks.length &&
+    !item.skills.some((skill) =>
+      filters.stacks.some((selected) => skill.toLowerCase().includes(selected.toLowerCase())),
+    )
   ) {
     return false
   }
@@ -49,10 +49,12 @@ function matchesListing(item: Listing, view: DiscoverView, filters: FiltersState
 }
 
 function App() {
-  const [view, setView] = useState<DiscoverView>('people')
+  const [view, setView] = useState<DiscoverView>('teams')
   const [filters, setFilters] = useState<FiltersState>(emptyFilters)
   const [savedIds, setSavedIds] = useState<Set<number>>(() => new Set())
   const [modalOpen, setModalOpen] = useState(false)
+  const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null)
+  const [loginName, setLoginName] = useState<string | null>(null)
   const [toasts, setToasts] = useState<ToastMessage[]>([])
 
   function showToast(title: string, message: string) {
@@ -89,55 +91,52 @@ function App() {
   }
 
   function handleContact(item: Listing) {
-    showToast(
-      'Знакомство начинается здесь',
-      `В рабочей версии можно открыть профиль ${item.name} и написать сообщение.`,
-    )
+    const action = item.kind === 'team' ? 'Откликнуться' : 'Позвать в команду'
+    showToast(action, `В рабочей версии «${action}» откроет сообщение для ${item.name}.`)
   }
 
-  function handleCreateSubmit(payload: { name: string; role: string; kind: ListingKind }) {
+  function handleCreateSubmit(payload: { name: string; role: string; kind: ListingKind; stacks: string[] }) {
     setModalOpen(false)
     showToast(
       'Анкета почти готова!',
-      `${payload.name}, черновик «${payload.role}» подготовлен. В рабочей версии добавим публикацию и сохранение.`,
+      `${payload.name}, черновик «${payload.role}» (${payload.stacks.join(', ')}) подготовлен. В рабочей версии добавим публикацию и сохранение.`,
     )
   }
 
   return (
     <>
       <Header
-        onLogin={() =>
-          showToast('Вход в Dream-Team', 'В готовом проекте здесь подключается авторизация.')
-        }
+        view={view}
+        login={loginName}
+        onViewChange={setView}
+        onLogin={() => setAuthMode('login')}
+        onRegister={() => setAuthMode('register')}
+        onLogout={() => setLoginName(null)}
         onCreate={() => setModalOpen(true)}
       />
 
-      <main id="top" className="container">
-        <Hero onCreate={() => setModalOpen(true)} />
-        <TrustStrip />
+      <main id="top">
         <DiscoverPage
           view={view}
           filters={filters}
           listings={visibleListings}
           savedIds={savedIds}
-          onViewChange={setView}
           onFiltersChange={setFilters}
           onResetFilters={() => setFilters(emptyFilters)}
           onSave={handleSave}
           onContact={handleContact}
         />
-        <section className="bottom-cta" id="community">
-          <div className="bottom-cta-copy">
-            <h3>Команды не соберутся сами 👀</h3>
-            <p>Расскажи, что умеешь и над чем хочешь работать.</p>
-          </div>
-          <button className="button button-dark" type="button" onClick={() => setModalOpen(true)}>
-            Создать свою анкету <span aria-hidden="true">↗</span>
-          </button>
-        </section>
       </main>
 
-      <Footer />
+      <AuthDialog
+        mode={authMode}
+        onClose={() => setAuthMode(null)}
+        onSwitch={setAuthMode}
+        onSuccess={(login) => {
+          setLoginName(login)
+          setAuthMode(null)
+        }}
+      />
       <CreateListingModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
