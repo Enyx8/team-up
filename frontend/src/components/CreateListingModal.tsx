@@ -1,16 +1,30 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { FORMAT_OPTIONS, UNIVERSITY_OPTIONS } from '../data/demoListings'
+import { FORMAT_OPTIONS, STACK_GROUPS, UNIVERSITY_OPTIONS } from '../data/demoListings'
 import type { ListingKind } from '../types'
 
 type CreateListingModalProps = {
   open: boolean
   onClose: () => void
-  onSubmit: (payload: { name: string; role: string; kind: ListingKind }) => void
+  onSubmit: (payload: { name: string; role: string; kind: ListingKind; stacks: string[] }) => void
 }
 
 export function CreateListingModal({ open, onClose, onSubmit }: CreateListingModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [kind, setKind] = useState<ListingKind>('person')
+  const [stacks, setStacks] = useState<string[]>([])
+  const [stackError, setStackError] = useState('')
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+    const unlock = () => {
+      document.body.style.overflow = ''
+      setStacks([])
+      setStackError('')
+    }
+    dialog.addEventListener('close', unlock)
+    return () => dialog.removeEventListener('close', unlock)
+  }, [])
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -18,6 +32,7 @@ export function CreateListingModal({ open, onClose, onSubmit }: CreateListingMod
 
     if (open) {
       if (!dialog.open) dialog.showModal()
+      document.body.style.overflow = 'hidden'
     } else if (dialog.open) {
       dialog.close()
     }
@@ -29,9 +44,15 @@ export function CreateListingModal({ open, onClose, onSubmit }: CreateListingMod
     const data = new FormData(form)
     const name = String(data.get('name') ?? '').trim()
     const role = String(data.get('role') ?? '').trim()
-    onSubmit({ name, role, kind })
+    if (!stacks.length) {
+      setStackError('Выбери хотя бы один навык.')
+      return
+    }
+    onSubmit({ name, role, kind, stacks })
     form.reset()
     setKind('person')
+    setStacks([])
+    setStackError('')
   }
 
   return (
@@ -99,12 +120,43 @@ export function CreateListingModal({ open, onClose, onSubmit }: CreateListingMod
             </select>
           </div>
         </div>
-        <div className="form-row">
-          <div className="form-field">
-            <label htmlFor="profile-stack">Стек / навыки</label>
-            <input id="profile-stack" name="stack" placeholder="React, TypeScript" required />
+        <div className="form-field">
+          <span id="profile-stack">Стек</span>
+          <div className="create-stacks" role="group" aria-labelledby="profile-stack">
+            {STACK_GROUPS.map((group) => (
+              <section className="stack-group" key={group.title}>
+                <h3>{group.title}</h3>
+                {group.items.length ? (
+                  <div className="chips">
+                    {group.items.map((name) => {
+                      const selected = stacks.includes(name)
+                      return (
+                        <button
+                          key={name}
+                          className="chip"
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => {
+                            setStackError('')
+                            setStacks((current) =>
+                              selected ? current.filter((item) => item !== name) : [...current, name],
+                            )
+                          }}
+                        >
+                          {name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p>{'note' in group ? group.note : ''}</p>
+                )}
+              </section>
+            ))}
           </div>
-          <div className="form-field">
+          {stackError ? <p className="form-error">{stackError}</p> : null}
+        </div>
+        <div className="form-field">
             <label htmlFor="profile-format">Формат</label>
             <select id="profile-format" name="format" defaultValue={FORMAT_OPTIONS[0]}>
               {FORMAT_OPTIONS.map((format) => (
@@ -113,7 +165,6 @@ export function CreateListingModal({ open, onClose, onSubmit }: CreateListingMod
                 </option>
               ))}
             </select>
-          </div>
         </div>
         <div className="form-field">
           <label htmlFor="profile-about">Немного о себе / проекте</label>
