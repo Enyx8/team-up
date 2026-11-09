@@ -54,6 +54,7 @@ export function Header({ view, login, onViewChange, onLogin, onRegister, onLogou
         </div>
         <nav className="mast-nav" aria-label="Кого искать">
           <button
+            className="view-teams"
             type="button"
             aria-pressed={view === 'teams'}
             onClick={() => onViewChange('teams')}
@@ -61,6 +62,7 @@ export function Header({ view, login, onViewChange, onLogin, onRegister, onLogou
             Найти команду
           </button>
           <button
+            className="view-people"
             type="button"
             aria-pressed={view === 'people'}
             onClick={() => onViewChange('people')}

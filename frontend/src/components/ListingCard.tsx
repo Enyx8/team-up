@@ -17,7 +17,8 @@ export function ListingCard({ item, saved, onSave, onContact }: ListingCardProps
   const preview = item.skills.slice(0, PREVIEW_SKILLS)
   const hiddenSkills = item.skills.length - preview.length
   const actionLabel = isTeam ? 'Откликнуться' : 'Позвать в команду'
-  const title = isTeam && item.project ? item.project : item.role
+  const capTitle = isTeam ? item.project || item.role : item.name
+  const capSub = isTeam ? `Ищут · ${item.role}` : item.role
 
   function openProfile() {
     const dialog = dialogRef.current
@@ -42,7 +43,7 @@ export function ListingCard({ item, saved, onSave, onContact }: ListingCardProps
   return (
     <>
       <article
-        className="listing-card"
+        className={`listing-card ${isTeam ? 'team' : 'person'}`}
         aria-labelledby={`card-title-${item.id}`}
         onClick={openProfile}
         onKeyDown={(event) => {
@@ -53,23 +54,11 @@ export function ListingCard({ item, saved, onSave, onContact }: ListingCardProps
         }}
         tabIndex={0}
       >
-        <div className="card-topline">
-          <div className="person-copy">
-            <div className="name-row">
-              <h3 className="person-name" id={`card-title-${item.id}`}>
-                {item.name}
-              </h3>
-              <span className={`format-pill${item.format === 'Онлайн' ? ' online' : ''}`}>
-                <span className="format-dot" aria-hidden="true" />
-                {item.format}
-              </span>
-            </div>
-            <p className="person-meta">
-              {item.university} · {item.course}
-            </p>
-            <p className="card-title">{title}</p>
-            {isTeam ? <p className="person-meta">Ищут · {item.role}</p> : null}
-          </div>
+        <header className="card-cap">
+          <h3 className="card-cap-title" id={`card-title-${item.id}`}>
+            {capTitle}
+          </h3>
+          <p className="card-cap-sub">{capSub}</p>
           <button
             className={`save-button${saved ? ' saved' : ''}`}
             type="button"
@@ -82,35 +71,49 @@ export function ListingCard({ item, saved, onSave, onContact }: ListingCardProps
           >
             <BookmarkIcon />
           </button>
-        </div>
+        </header>
 
-        <div className="card-tags">
-          {preview.map((skill) => (
-            <span className="skill-tag" key={skill}>
-              {skill}
+        <div className="card-sheet">
+          {isTeam ? <p className="card-lead">{item.name}</p> : null}
+          <div className={isTeam ? 'card-meta' : 'card-meta card-lead'}>
+            <span>
+              {item.university} · {item.course}
             </span>
-          ))}
-          {hiddenSkills > 0 ? <span className="skill-more">+{hiddenSkills}</span> : null}
+            <span className={`card-format${item.format === 'Онлайн' ? ' online' : ''}`}>
+              <span className="format-dot" aria-hidden="true" />
+              {item.format}
+            </span>
+          </div>
+
+          <div className="card-tags">
+            {preview.map((skill) => (
+              <span className="skill-tag" key={skill}>
+                {skill}
+              </span>
+            ))}
+            {hiddenSkills > 0 ? <span className="skill-more">+{hiddenSkills}</span> : null}
+          </div>
+
+          <p className="card-description card-description-long">{item.description}</p>
+
+          <div className="card-actions">
+            <button
+              className="card-link"
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                onContact(item)
+              }}
+            >
+              {actionLabel}
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <p className="card-description card-description-long">{item.description}</p>
-
-        <div className="card-footer">
-          <span className={isTeam ? 'card-badge team' : 'card-badge'}>{item.badge}</span>
-          <button
-            className="card-link"
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation()
-              onContact(item)
-            }}
-          >
-            {actionLabel}
-            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-              <path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
+        <p className="card-chin">{item.badge}</p>
       </article>
 
       <dialog
