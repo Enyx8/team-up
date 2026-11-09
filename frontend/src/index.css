@@ -242,9 +242,14 @@ a { color: inherit; text-decoration: none; }
 }
 
 .mast-nav button:hover { transform: translateY(-2px); }
-.mast-nav button[aria-pressed="true"] {
-  background: var(--blue);
-  box-shadow: inset 0 -3px 0 rgba(18, 52, 76, 0.22), 0 10px 18px rgba(93, 162, 213, 0.45);
+.mast-nav button.view-teams[aria-pressed="true"] {
+  background: var(--coral);
+  box-shadow: inset 0 -3px 0 rgba(18, 52, 76, 0.22), 0 10px 18px rgba(247, 136, 136, 0.45);
+}
+
+.mast-nav button.view-people[aria-pressed="true"] {
+  background: var(--sky);
+  box-shadow: inset 0 -3px 0 rgba(18, 52, 76, 0.22), 0 10px 18px rgba(144, 204, 244, 0.55);
 }
 
 .discover {
@@ -326,8 +331,9 @@ select.plain, .stack-open {
   box-shadow: 0 2px 0 rgba(18, 52, 76, 0.12), 0 6px 12px rgba(18, 52, 76, 0.06);
 }
 .seg button[aria-pressed="true"] {
-  background: var(--sky);
-  box-shadow: inset 0 -2px 0 rgba(18, 52, 76, 0.16), 0 6px 12px rgba(144, 204, 244, 0.55);
+  background: #f6d453;
+  color: #24324a;
+  box-shadow: 0 8px 18px rgba(210, 170, 40, 0.28);
 }
 .chip[aria-pressed="true"] {
   background: var(--sun);
@@ -337,16 +343,20 @@ select.plain, .stack-open {
 .listings-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  column-gap: 12px;
+  row-gap: 22px;
   margin-top: 14px;
   align-items: stretch;
 }
 
 .listing-card {
+  --band: var(--sky);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
+  gap: 0;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
   background: var(--card);
   border: 0;
   border-radius: 10px;
@@ -355,6 +365,9 @@ select.plain, .stack-open {
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
+
+.listing-card.team { --band: var(--coral); }
+.listing-card.person { --band: var(--sky); }
 
 .listing-card:hover {
   transform: translateY(-3px);
@@ -608,6 +621,103 @@ dialog::-webkit-scrollbar {
   padding-top: 4px;
 }
 
+.card-cap {
+  position: relative;
+  padding: 18px 56px 16px;
+  background: var(--band);
+  box-shadow: inset 0 -3px 0 rgba(18, 52, 76, 0.12);
+  text-align: center;
+}
+
+.card-cap-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.card-cap-sub {
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.listing-card .save-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 8px;
+}
+
+.listing-card .save-button svg { width: 22px; height: 22px; }
+
+.card-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  padding: 14px 14px 16px;
+}
+
+.card-lead {
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1.5px solid rgba(18, 52, 76, 0.28);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.card-meta.card-lead { font-size: 16px; font-weight: 800; }
+
+.card-format {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+
+.card-format .format-dot { background: var(--ink); }
+.card-format.online { color: #1f7a45; }
+.card-format.online .format-dot { background: #2fbe62; }
+.card-meta.card-lead .card-format { font-size: 13px; font-weight: 700; }
+
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+
+.listing-card .card-link { min-height: 44px; }
+
+.card-chin {
+  margin: 0;
+  padding: 9px 14px;
+  background: var(--band);
+  box-shadow: inset 0 3px 0 rgba(18, 52, 76, 0.12);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
 .empty-state {
   grid-column: 1 / -1;
   max-width: 42ch;
@@ -712,6 +822,7 @@ dialog::-webkit-scrollbar {
   .mast-title { flex-direction: column; align-items: flex-start; }
   .toolbar-bottom { flex-wrap: wrap; }
   .listings-grid { grid-template-columns: 1fr; }
+  .card-cap-title { font-size: 26px; }
   .form-row { grid-template-columns: 1fr; }
   .wordmark { font-size: 42px; }
 }
