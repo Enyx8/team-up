@@ -1,6 +1,10 @@
 .DS_Store
 Thumbs.db
 .idea/
+
+# Локальные скиллы агентов
+.agents/skills/
+.cursor/skills/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
