@@ -6,8 +6,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class ListingBase(BaseModel):
     type: Literal["seeking_team", "seeking_members"]
-    role_focus: Literal["backend", "frontend", "fullstack", "mobile", "ml", "data", "devops", "qa", "design", "pm"]
-    bio: Text = Field(max_length=500)
+    role_focus: Literal["backend", "frontend", "fullstack", "mobile", "ml",
+    "data", "devops", "qa", "design", "pm"] | None = Field(default=None)
+    bio: Text | None = Field(max_length=500, default=None)
     format: Literal["online", "offline"]
     status: Literal["active", "closed"]
     hackathons_count: int = Field(ge=0)
