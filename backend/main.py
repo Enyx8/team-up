@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from schemas import ListingCreate, ListingResponse
+from schemas import ListingCreate, ListingResponse, ListingUpdatePartial, ListingUpdateFull
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from typing import Annotated
@@ -16,7 +16,7 @@ app = FastAPI()
 # noinspection bad-argument-type
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['http://localhost:5173'],
+    allow_origins=['http://localhost:5173', "http://127.0.0.1:8000"],
     allow_methods=['*'],
     allow_headers=['*']
 )
@@ -83,6 +83,43 @@ def create_listing(listing: ListingCreate, db: Annotated[Session, Depends(get_db
     return new_listing
 
 
+"""
+--------------------------
+----------UPDATING--------
+--------------------------
+"""
+@app.put('/listings/{listing_id}', response_model=ListingResponse)
+def update_listing_full(listing_data: ListingUpdateFull, listing_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(select(models.Listing).where(models.Listing.id == listing_id))
+    listing = result.scalars().first()
+    if not listing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
+
+    listing.type = listing_data.type
+    listing.role_focus = listing_data.role_focus
+    listing.bio = listing_data.bio
+    listing.format = listing_data.format
+    listing.status = listing_data.status
+    listing.hackathons_count = listing_data.hackathons_count
+
+    db.commit()
+    db.refresh(listing)
+    return listing
+
+@app.patch('/listings/{listing_id}', response_model=ListingResponse)
+def update_listing_partial(listing_data: ListingUpdatePartial, listing_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(select(models.Listing).where(models.Listing.id == listing_id))
+    listing = result.scalars().first()
+    if not listing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
+
+    update_data = listing_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(listing, field, value)
+
+    db.commit()
+    db.refresh(listing)
+    return listing
 
 #-------------------------------------------
 # ---------------HANDLERS-------------------
@@ -101,6 +138,21 @@ def general_http_exception_handler(request: Request, exception: StarletteHTTPExc
         content={"detail": message},
     )
     #html я пока не знаю чё там как там поэтому пока чисто с api
+
+"""
+--------------------------
+----------DELETING--------
+--------------------------
+"""
+@app.delete('/listings/{listing_id}', status_code=status.HTTP_204_NO_CONTENT)
+def delete_listing(listing_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]):
+    result = db.execute(select(models.Listing).where(models.Listing.id == listing_id))
+    listing = result.scalars().first()
+    if not listing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
+
+    db.delete(listing)
+    db.commit()
 
 #dead code at the moment
 @app.exception_handler(RequestValidationError)
