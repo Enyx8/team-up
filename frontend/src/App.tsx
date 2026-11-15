@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { fetchListings } from './api/listings'
 import { AuthDialog } from './components/AuthDialog'
 import { CreateListingModal } from './components/CreateListingModal'
 import { Header } from './components/Header'
 import { ToastRegion } from './components/ToastRegion'
-import { listings as demoListings } from './data/demoListings'
 import { DiscoverPage } from './pages/DiscoverPage'
 import type { DiscoverView, FiltersState, Listing, ListingKind, ToastMessage } from './types'
 
@@ -34,7 +34,6 @@ function matchesListing(item: Listing, view: DiscoverView, filters: FiltersState
     const searchable = [
       item.name,
       item.role,
-      item.project ?? '',
       item.university,
       item.course,
       item.description,
@@ -48,14 +47,37 @@ function matchesListing(item: Listing, view: DiscoverView, filters: FiltersState
   return true
 }
 
+type CatalogLoadState = 'loading' | 'ready' | 'error'
+
 function App() {
   const [view, setView] = useState<DiscoverView>('teams')
   const [filters, setFilters] = useState<FiltersState>(emptyFilters)
-  const [savedIds, setSavedIds] = useState<Set<number>>(() => new Set())
+  const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set())
   const [modalOpen, setModalOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null)
   const [loginName, setLoginName] = useState<string | null>(null)
   const [toasts, setToasts] = useState<ToastMessage[]>([])
+  const [listings, setListings] = useState<Listing[]>([])
+  const [catalogState, setCatalogState] = useState<CatalogLoadState>('loading')
+  const [catalogError, setCatalogError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setCatalogState('loading')
+    setCatalogError(null)
+    fetchListings(controller.signal)
+      .then((items) => {
+        setListings(items)
+        setCatalogState('ready')
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setCatalogState('error')
+        setCatalogError('Не удалось загрузить анкеты. Проверь, что API запущен на порту 8000.')
+        setListings([])
+      })
+    return () => controller.abort()
+  }, [])
 
   function showToast(title: string, message: string) {
     const id = Date.now() + Math.random()
@@ -66,17 +88,19 @@ function App() {
   }
 
   const visibleListings = useMemo(() => {
-    const filtered = demoListings.filter((item) => matchesListing(item, view, filters))
+    const filtered = listings.filter((item) => matchesListing(item, view, filters))
     if (filters.sort === 'experience') {
       return [...filtered].sort((a, b) => b.experience - a.experience)
     }
     if (filters.sort === 'name') {
       return [...filtered].sort((a, b) => a.name.localeCompare(b.name, 'ru'))
     }
-    return [...filtered].sort((a, b) => a.age - b.age)
-  }, [view, filters])
+    return [...filtered].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
+  }, [listings, view, filters])
 
-  function handleSave(id: number) {
+  function handleSave(id: string) {
     const alreadySaved = savedIds.has(id)
     setSavedIds((current) => {
       const next = new Set(current)
@@ -121,6 +145,8 @@ function App() {
           filters={filters}
           listings={visibleListings}
           savedIds={savedIds}
+          loading={catalogState === 'loading'}
+          loadError={catalogState === 'error' ? catalogError : null}
           onFiltersChange={setFilters}
           onResetFilters={() => setFilters(emptyFilters)}
           onSave={handleSave}
