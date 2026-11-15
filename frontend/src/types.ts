@@ -1,15 +1,12 @@
 export type ListingKind = 'person' | 'team'
-export type AvatarTone = 'lavender' | 'peach' | 'blue' | 'mint' | 'yellow'
 export type Format = 'Онлайн' | 'Очно' | 'Гибрид'
 export type DiscoverView = 'people' | 'teams'
 export type SortOption = 'newest' | 'experience' | 'name'
 
 export type Listing = {
-  id: number
+  id: string
   kind: ListingKind
   name: string
-  initials: string
-  avatar: AvatarTone
   role: string
   university: string
   course: string
@@ -18,9 +15,7 @@ export type Listing = {
   skills: string[]
   format: Format
   badge: string
-  badgeKind: ListingKind
-  age: number
-  project?: string
+  createdAt: string
 }
 
 export type ToastMessage = {

@@ -24,6 +24,22 @@ class ListingResponse(ListingBase):
     created_at: datetime
 
 
+class ListingCatalogResponse(ListingBase):
+    """Ответ GET /listings и GET /listings/{id} — данные для карточки каталога."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    author_id: uuid.UUID
+    created_at: datetime
+    name: str
+    university: str | None = None
+    course: int | None = Field(default=None, ge=1, le=6)
+    avatar_color: str | None = None
+    skills: list[str] = Field(default_factory=list)
+    slots_needed: int | None = Field(default=None, ge=0)
+
+
 class ListingUpdateFull(ListingBase):
     pass
 
