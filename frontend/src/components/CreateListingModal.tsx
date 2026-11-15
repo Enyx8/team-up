@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { FORMAT_OPTIONS, STACK_GROUPS, UNIVERSITY_OPTIONS } from '../data/demoListings'
+import { FORMAT_OPTIONS, STACK_GROUPS, UNIVERSITY_OPTIONS } from '../data/catalogOptions'
 import type { ListingKind } from '../types'
 
 type CreateListingModalProps = {

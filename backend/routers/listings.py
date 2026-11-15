@@ -1,7 +1,14 @@
 import uuid
 
 from fastapi import HTTPException, Depends, status, APIRouter
-from schemas import ListingCreate, ListingResponse, ListingUpdatePartial, ListingUpdateFull
+from listing_catalog import enrich_listings, enrich_one
+from schemas import (
+    ListingCatalogResponse,
+    ListingCreate,
+    ListingResponse,
+    ListingUpdatePartial,
+    ListingUpdateFull,
+)
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from typing import Annotated
@@ -16,20 +23,24 @@ router = APIRouter()
 ------GETTING-----
 ------------------
 """
-@router.get('/{listing_id}', response_model=ListingResponse)
+@router.get('/{listing_id}', response_model=ListingCatalogResponse)
 def get_one_listing(listing_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]):
     result = db.execute(select(models.Listing).where(models.Listing.id == listing_id))
     listing = result.scalars().first()
     if not listing:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
-    else:
-        return listing
+    catalog_item = enrich_one(db, listing)
+    if not catalog_item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing author not found")
+    return catalog_item
 
-@router.get('', response_model=list[ListingResponse])
+@router.get('', response_model=list[ListingCatalogResponse])
 def get_listings(db: Annotated[Session, Depends(get_db)]):
-    result = db.execute(select(models.Listing))
+    result = db.execute(
+        select(models.Listing).where(models.Listing.status == "active").order_by(models.Listing.created_at.desc())
+    )
     listings = result.scalars().all()
-    return listings
+    return enrich_listings(db, listings)
 
 
 """

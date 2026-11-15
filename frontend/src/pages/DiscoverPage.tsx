@@ -6,10 +6,12 @@ type DiscoverPageProps = {
   view: DiscoverView
   filters: FiltersState
   listings: Listing[]
-  savedIds: Set<number>
+  savedIds: Set<string>
+  loading?: boolean
+  loadError?: string | null
   onFiltersChange: (filters: FiltersState) => void
   onResetFilters: () => void
-  onSave: (id: number) => void
+  onSave: (id: string) => void
   onContact: (item: Listing) => void
 }
 
@@ -26,6 +28,8 @@ export function DiscoverPage({
   filters,
   listings,
   savedIds,
+  loading = false,
+  loadError = null,
   onFiltersChange,
   onResetFilters,
   onSave,
@@ -45,7 +49,16 @@ export function DiscoverPage({
         onReset={onResetFilters}
       />
       <div className="listings-grid" aria-live="polite">
-        {listings.length ? (
+        {loadError ? (
+          <div className="empty-state">
+            <h3>Каталог недоступен</h3>
+            <p>{loadError}</p>
+          </div>
+        ) : loading ? (
+          <div className="empty-state">
+            <h3>Загружаем анкеты…</h3>
+          </div>
+        ) : listings.length ? (
           listings.map((item) => (
             <ListingCard
               key={item.id}
