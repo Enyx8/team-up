@@ -2,7 +2,41 @@ from datetime import datetime, UTC
 import uuid
 from typing import Literal, Text
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
+
+class UserBase(BaseModel):
+    full_name: str = Field(max_length=255)
+    university_id: int | None = Field(default=None, ge=1)
+    course: int | None = Field(default=None, ge=1)
+    telegram: str | None = Field(max_length=150, default=None)
+    avatar_color: str | None = Field(max_length=7, default=None)
+
+class UserPublicResponse(UserBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    created_at: datetime
+
+class UserPrivateResponse(UserBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    created_at: datetime
+
+class UserCreate(UserBase):
+    email: EmailStr = Field(max_length=255)
+    password_hash: str = Field(min_length=8, max_length=255)
+
+class UserUpdatePartial(BaseModel):
+    full_name: str | None = Field(max_length=255, default=None)
+    university_id: int | None = Field(default=None, ge=1)
+    course: int | None = Field(default=None, ge=1)
+    telegram: str | None = Field(max_length=150, default=None)
+    avatar_color: str | None = Field(max_length=7, default=None)
+    email: EmailStr | None = Field(max_length=255, default=None)
+    password_hash: str | None = Field(min_length=8, max_length=255, default=None)
+
+class Token(BaseModel):
+    acces_token: str
+    token_type: str
 
 class ListingBase(BaseModel):
     type: Literal["seeking_team", "seeking_members"]
@@ -52,3 +86,5 @@ class ListingUpdatePartial(BaseModel):
     format: Literal["online", "offline"] | None = Field(default=None)
     status: Literal["active", "closed"] | None = Field(default=None)
     hackathons_count: int | None = Field(default=None, ge=0)
+
+
