@@ -52,7 +52,7 @@ class ListingBase(BaseModel):
 
 
 class ListingCreate(ListingBase):
-    author_id: uuid.UUID
+    pass
 
 class ListingResponse(ListingBase):
     author_id: uuid.UUID
