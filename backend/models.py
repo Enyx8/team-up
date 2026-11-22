@@ -24,6 +24,8 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                                  default=func.now())
 
+    listings: Mapped[list[Listing]] = relationship(back_populates="author", cascade="all, delete-orphan")
+
 class Universities(Base):
     __tablename__ = 'universities'
 
@@ -58,6 +60,8 @@ class Listing(Base):
 
     hackathons_count: Mapped[int] = mapped_column(SmallInteger, server_default='0')
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    author: Mapped[User] = relationship(back_populates="listings")
 
 class Messages(Base):
     __tablename__ = 'messages'
