@@ -25,6 +25,17 @@ app.include_router(listings.router, prefix="/listings", tags=["listings"])
 def health():
     return {'health': 'ok'}
 
+
+@app.get("/login", include_in_schema=False)
+async def login_page(request: Request):
+    return request
+
+
+@app.get("/register", include_in_schema=False)
+async def register_page(request: Request):
+    return request
+
+
 #-------------------------------------------
 # ---------------HANDLERS-------------------
 #-------------------------------------------

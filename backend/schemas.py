@@ -10,6 +10,7 @@ class UserBase(BaseModel):
     course: int | None = Field(default=None, ge=1)
     telegram: str | None = Field(max_length=150, default=None)
     avatar_color: str | None = Field(max_length=7, default=None)
+    github_url: str | None = Field(max_length=255, default=None)
 
 class UserPublicResponse(UserBase):
     """Ответ GET /{user_id} для публичных инстанций появления юзера (например в листинге)"""
@@ -36,6 +37,7 @@ class UserUpdatePartial(BaseModel):
     avatar_color: str | None = Field(max_length=7, default=None)
     email: EmailStr | None = Field(max_length=255, default=None)
     password: str | None = Field(min_length=8, max_length=255, default=None)
+    github_url: str | None = Field(max_length=255, default=None)
 
 class Token(BaseModel):
     access_token: str
