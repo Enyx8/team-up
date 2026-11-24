@@ -80,6 +80,8 @@ def listing_to_catalog(
         avatar_color=user.avatar_color,
         skills=skills,
         slots_needed=slots_needed,
+        github_url=listing.github_url,
+        author_github_url=user.github_url,
     )
 
 

@@ -1,3 +1,4 @@
+import { ROLE_LABELS, type RoleFocus } from '../data/catalogOptions'
 import type { Format, Listing, ListingKind } from '../types'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
@@ -29,19 +30,18 @@ export type ApiListing = {
   avatar_color: string | null
   skills: string[]
   slots_needed: number | null
+  github_url: string | null
+  author_github_url: string | null
 }
 
-const ROLE_LABELS: Record<NonNullable<ApiListing['role_focus']>, string> = {
-  backend: 'Backend-разработчик',
-  frontend: 'Frontend-разработчик',
-  fullstack: 'Fullstack-разработчик',
-  mobile: 'Mobile-разработчик',
-  ml: 'ML-инженер',
-  data: 'Data-инженер',
-  devops: 'DevOps-инженер',
-  qa: 'QA-инженер',
-  design: 'UI/UX-дизайнер',
-  pm: 'Product-менеджер',
+export class ListingApiError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ListingApiError'
+    this.status = status
+  }
 }
 
 function formatLabel(format: ApiListing['format']): Format {
@@ -56,6 +56,18 @@ function pluralParticipants(count: number): string {
   return `Нужно ${count} участников`
 }
 
+export function githubHref(url: string): string {
+  const trimmed = url.trim()
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://${trimmed.replace(/^\/+/, '')}`
+}
+
+function githubForListing(kind: ListingKind, item: ApiListing): string | null {
+  const raw = kind === 'team' ? item.github_url : item.author_github_url
+  const trimmed = raw?.trim()
+  return trimmed ? trimmed : null
+}
+
 function badgeForListing(kind: ListingKind, slotsNeeded: number | null): string {
   if (kind === 'team' && slotsNeeded != null && slotsNeeded > 0) {
     return pluralParticipants(slotsNeeded)
@@ -65,7 +77,7 @@ function badgeForListing(kind: ListingKind, slotsNeeded: number | null): string 
 
 export function mapApiListingToListing(item: ApiListing): Listing {
   const kind: ListingKind = item.type === 'seeking_team' ? 'person' : 'team'
-  const role = item.role_focus ? ROLE_LABELS[item.role_focus] : 'Участник'
+  const role = item.role_focus ? ROLE_LABELS[item.role_focus as RoleFocus] : 'Участник'
   const course =
     item.course != null ? `${item.course} курс` : kind === 'team' ? 'Команда' : '—'
 
@@ -82,6 +94,7 @@ export function mapApiListingToListing(item: ApiListing): Listing {
     format: formatLabel(item.format),
     badge: badgeForListing(kind, item.slots_needed),
     createdAt: item.created_at,
+    githubUrl: githubForListing(kind, item),
   }
 }
 
@@ -92,4 +105,63 @@ export async function fetchListings(signal?: AbortSignal): Promise<Listing[]> {
   }
   const data = (await response.json()) as ApiListing[]
   return data.map(mapApiListingToListing)
+}
+
+export type CreateListingInput = {
+  kind: ListingKind
+  fullName: string
+  role: RoleFocus
+  university: string
+  stacks: string[]
+  format: Format
+  githubUrl: string
+  about: string
+  slotsNeeded: number
+}
+
+function formatToApi(format: Format): 'online' | 'offline' {
+  return format === 'Очно' ? 'offline' : 'online'
+}
+
+export async function createListing(token: string, input: CreateListingInput): Promise<Listing> {
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE}/listings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        type: input.kind === 'person' ? 'seeking_team' : 'seeking_members',
+        role_focus: input.role,
+        bio: input.about || null,
+        format: formatToApi(input.format),
+        github_url: input.githubUrl || null,
+        skills: input.stacks,
+        slots_needed: input.kind === 'team' ? input.slotsNeeded : null,
+        full_name: input.fullName,
+        university: input.university || null,
+      }),
+    })
+  } catch {
+    throw new ListingApiError('Не удалось связаться с API. Проверь, что он запущен на порту 8000.', 0)
+  }
+
+  if (response.status === 401) {
+    throw new ListingApiError('Сессия истекла. Войди снова, затем опубликуй анкету.', 401)
+  }
+  if (!response.ok) {
+    let detail = `Сервер вернул ошибку ${response.status}`
+    try {
+      const payload = (await response.json()) as { detail?: unknown }
+      if (typeof payload.detail === 'string') detail = payload.detail
+    } catch {
+      /* keep default */
+    }
+    throw new ListingApiError(detail, response.status)
+  }
+
+  const data = (await response.json()) as ApiListing
+  return mapApiListingToListing(data)
 }

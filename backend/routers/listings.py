@@ -50,24 +50,76 @@ def get_listings(db: Annotated[Session, Depends(get_db)]):
 """
 @router.post(
     "",
-    response_model=ListingResponse,
+    response_model=ListingCatalogResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def create_listing(listing: ListingCreate, current_user: CurrentUser, db: Annotated[Session, Depends(get_db)]):
+    skill_names = [name.strip() for name in listing.skills if name.strip()]
+    if not skill_names:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Нужен хотя бы один навык")
+
+    skill_rows = db.execute(
+        select(models.Skills).where(models.Skills.name.in_(skill_names))
+    ).scalars().all()
+    skills_by_name = {row.name: row for row in skill_rows}
+    missing = [name for name in skill_names if name not in skills_by_name]
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Неизвестный навык: {', '.join(missing)}",
+        )
+
+    if listing.type == "seeking_members" and not listing.role_focus:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Для запроса команды укажи роль",
+        )
+
+    github = listing.github_url.strip() if listing.github_url else None
+    listing_github = github if listing.type == "seeking_members" else None
+
     new_listing = models.Listing(
         author_id=current_user.id,
         type=listing.type,
         role_focus=listing.role_focus,
         bio=listing.bio,
         format=listing.format,
-        status=listing.status,
-        hackathons_count=listing.hackathons_count,
+        status="active",
+        hackathons_count=0,
+        github_url=listing_github,
     )
     db.add(new_listing)
+    db.flush()
+
+    for name in skill_names:
+        skill = skills_by_name[name]
+        db.add(models.ListingSkills(listing_id=new_listing.id, skill_id=skill.id))
+
+    if listing.type == "seeking_members":
+        db.add(
+            models.ListingRoles(
+                listing_id=new_listing.id,
+                role_focus=listing.role_focus,
+                slots_needed=listing.slots_needed or 1,
+            )
+        )
+
+    current_user.full_name = listing.full_name.strip()
+    if listing.type == "seeking_team" and github:
+        current_user.github_url = github
+    if listing.university:
+        university = db.execute(
+            select(models.Universities).where(models.Universities.name == listing.university)
+        ).scalars().first()
+        if university:
+            current_user.university_id = university.id
+
     db.commit()
     db.refresh(new_listing)
-
-    return new_listing
+    catalog_item = enrich_one(db, new_listing)
+    if not catalog_item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing author not found")
+    return catalog_item
 
 
 """
@@ -92,6 +144,7 @@ def update_listing_full(listing_data: ListingUpdateFull, listing_id: uuid.UUID,
     listing.format = listing_data.format
     listing.status = listing_data.status
     listing.hackathons_count = listing_data.hackathons_count
+    listing.github_url = listing_data.github_url
 
     db.commit()
     db.refresh(listing)

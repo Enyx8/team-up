@@ -203,6 +203,12 @@ a { color: inherit; text-decoration: none; }
 }
 
 .auth-submit { justify-self: start; }
+.auth-submit:disabled,
+.auth-switch:disabled {
+  opacity: 0.6;
+  transform: none;
+  cursor: default;
+}
 
 .auth-switch {
   justify-self: start;
@@ -545,6 +551,12 @@ dialog::-webkit-scrollbar {
 
 .profile-line svg { flex: 0 0 auto; }
 
+.profile-github {
+  color: var(--blue);
+  font-weight: 700;
+  word-break: break-all;
+}
+
 .achievement {
   margin: 0;
   padding: 10px 12px;
@@ -791,6 +803,11 @@ dialog::-webkit-scrollbar {
   font-weight: 700;
 }
 .button-purple { justify-self: start; }
+.button-purple:disabled {
+  opacity: 0.6;
+  transform: none;
+  cursor: default;
+}
 
 .toast-region {
   position: fixed;

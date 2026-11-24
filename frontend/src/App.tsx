@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { fetchListings } from './api/listings'
+import { clearSession, fetchCurrentUser, getStoredDisplayName, getStoredToken } from './api/auth'
+import { createListing, fetchListings, ListingApiError } from './api/listings'
 import { AuthDialog } from './components/AuthDialog'
-import { CreateListingModal } from './components/CreateListingModal'
+import { CreateListingModal, type CreateListingPayload } from './components/CreateListingModal'
 import { Header } from './components/Header'
 import { ToastRegion } from './components/ToastRegion'
 import { DiscoverPage } from './pages/DiscoverPage'
-import type { DiscoverView, FiltersState, Listing, ListingKind, ToastMessage } from './types'
+import type { DiscoverView, FiltersState, Listing, ToastMessage } from './types'
 
 const emptyFilters: FiltersState = {
   search: '',
@@ -37,6 +38,7 @@ function matchesListing(item: Listing, view: DiscoverView, filters: FiltersState
       item.university,
       item.course,
       item.description,
+      item.githubUrl ?? '',
       ...item.skills,
     ]
       .join(' ')
@@ -55,11 +57,22 @@ function App() {
   const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set())
   const [modalOpen, setModalOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null)
-  const [loginName, setLoginName] = useState<string | null>(null)
+  const [loginName, setLoginName] = useState<string | null>(() => getStoredDisplayName())
   const [toasts, setToasts] = useState<ToastMessage[]>([])
   const [listings, setListings] = useState<Listing[]>([])
   const [catalogState, setCatalogState] = useState<CatalogLoadState>('loading')
   const [catalogError, setCatalogError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const token = getStoredToken()
+    if (!token) return
+    fetchCurrentUser(token)
+      .then((user) => setLoginName(user.full_name))
+      .catch(() => {
+        clearSession()
+        setLoginName(null)
+      })
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -119,12 +132,34 @@ function App() {
     showToast(action, `В рабочей версии «${action}» откроет сообщение для ${item.name}.`)
   }
 
-  function handleCreateSubmit(payload: { name: string; role: string; kind: ListingKind; stacks: string[] }) {
+  async function handleCreateSubmit(payload: CreateListingPayload) {
+    const token = getStoredToken()
+    if (!token) {
+      setModalOpen(false)
+      setAuthMode('login')
+      showToast('Нужен вход', 'Войди или зарегистрируйся, затем опубликуй анкету.')
+      throw new ListingApiError('Нужен вход.', 401)
+    }
+
+    try {
+      await createListing(token, payload)
+    } catch (caught) {
+      if (caught instanceof ListingApiError && caught.status === 401) {
+        clearSession()
+        setLoginName(null)
+        setModalOpen(false)
+        setAuthMode('login')
+        showToast('Сессия истекла', caught.message)
+      }
+      throw caught
+    }
+
+    const items = await fetchListings()
+    setListings(items)
+    setCatalogState('ready')
     setModalOpen(false)
-    showToast(
-      'Анкета почти готова!',
-      `${payload.name}, черновик «${payload.role}» (${payload.stacks.join(', ')}) подготовлен. В рабочей версии добавим публикацию и сохранение.`,
-    )
+    setView(payload.kind === 'team' ? 'teams' : 'people')
+    showToast('Анкета опубликована', 'Она уже в каталоге.')
   }
 
   return (
@@ -135,8 +170,18 @@ function App() {
         onViewChange={setView}
         onLogin={() => setAuthMode('login')}
         onRegister={() => setAuthMode('register')}
-        onLogout={() => setLoginName(null)}
-        onCreate={() => setModalOpen(true)}
+        onLogout={() => {
+          clearSession()
+          setLoginName(null)
+        }}
+        onCreate={() => {
+          if (!getStoredToken()) {
+            setAuthMode('login')
+            showToast('Нужен вход', 'Войди или зарегистрируйся, затем опубликуй анкету.')
+            return
+          }
+          setModalOpen(true)
+        }}
       />
 
       <main id="top">
@@ -158,13 +203,18 @@ function App() {
         mode={authMode}
         onClose={() => setAuthMode(null)}
         onSwitch={setAuthMode}
-        onSuccess={(login) => {
-          setLoginName(login)
+        onSuccess={(name, kind) => {
+          setLoginName(name)
           setAuthMode(null)
+          showToast(
+            kind === 'register' ? 'Аккаунт создан' : 'Вход выполнен',
+            kind === 'register' ? `${name}, ты в каталоге под своим именем.` : `Привет, ${name}.`,
+          )
         }}
       />
       <CreateListingModal
         open={modalOpen}
+        defaultName={loginName ?? ''}
         onClose={() => setModalOpen(false)}
         onSubmit={handleCreateSubmit}
       />

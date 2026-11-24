@@ -35,7 +35,8 @@ def create_user(user_data: UserCreate, db: Annotated[Session, Depends(get_db)]):
         university_id=user_data.university_id,
         course=user_data.course,
         telegram=user_data.telegram,
-        avatar_color=user_data.avatar_color
+        avatar_color=user_data.avatar_color,
+        github_url=user_data.github_url,
     )
     db.add(new_user)
     db.commit()

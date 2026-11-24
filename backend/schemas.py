@@ -51,10 +51,20 @@ class ListingBase(BaseModel):
     format: Literal["online", "offline"]
     status: Literal["active", "closed"]
     hackathons_count: int = Field(ge=0)
+    github_url: str | None = Field(default=None, max_length=255)
 
 
-class ListingCreate(ListingBase):
-    pass
+class ListingCreate(BaseModel):
+    type: Literal["seeking_team", "seeking_members"]
+    role_focus: Literal["backend", "frontend", "fullstack", "mobile", "ml",
+    "data", "devops", "qa", "design", "pm"] | None = Field(default=None)
+    bio: Text | None = Field(max_length=500, default=None)
+    format: Literal["online", "offline"]
+    github_url: str | None = Field(default=None, max_length=255)
+    skills: list[str] = Field(min_length=1)
+    slots_needed: int | None = Field(default=None, ge=1, le=20)
+    full_name: str = Field(max_length=150)
+    university: str | None = Field(default=None, max_length=100)
 
 class ListingResponse(ListingBase):
     author_id: uuid.UUID
@@ -64,7 +74,7 @@ class ListingResponse(ListingBase):
 
 
 class ListingCatalogResponse(ListingBase):
-    """Ответ GET /listings и GET /listings/{id} — данные для карточки каталога."""
+    """GET /listings: github_url — репозиторий проекта, author_github_url — GitHub автора."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -77,6 +87,7 @@ class ListingCatalogResponse(ListingBase):
     avatar_color: str | None = None
     skills: list[str] = Field(default_factory=list)
     slots_needed: int | None = Field(default=None, ge=0)
+    author_github_url: str | None = None
 
 
 class ListingUpdateFull(ListingBase):
@@ -91,5 +102,6 @@ class ListingUpdatePartial(BaseModel):
     format: Literal["online", "offline"] | None = Field(default=None)
     status: Literal["active", "closed"] | None = Field(default=None)
     hackathons_count: int | None = Field(default=None, ge=0)
+    github_url: str | None = Field(default=None, max_length=255)
 
 

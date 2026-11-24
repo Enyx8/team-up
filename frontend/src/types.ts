@@ -16,6 +16,7 @@ export type Listing = {
   format: Format
   badge: string
   createdAt: string
+  githubUrl: string | null
 }
 
 export type ToastMessage = {

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { githubHref } from '../api/listings'
 import type { Listing } from '../types'
 import { BookmarkIcon } from './Icons'
 
@@ -146,6 +147,23 @@ export function ListingCard({ item, saved, onSave, onContact }: ListingCardProps
               <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="4" width="12" height="9" rx="1.4" fill="none" stroke="currentColor" strokeWidth="1.4"/><path d="M6 4V3.2A1.2 1.2 0 0 1 7.2 2h1.6A1.2 1.2 0 0 1 10 3.2V4" fill="none" stroke="currentColor" strokeWidth="1.4"/></svg>
               {isTeam ? `Ищут · ${item.role}` : item.role}
             </p>
+            {item.githubUrl ? (
+              <p className="profile-line">
+                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="M6.2 9.8 9.8 6.2" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                  <path d="M7.1 4.4 8.6 2.9a2.2 2.2 0 0 1 3.1 3.1L10.2 7.5M8.9 11.6 7.4 13.1A2.2 2.2 0 1 1 4.3 10l1.5-1.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                </svg>
+                <a
+                  className="profile-github"
+                  href={githubHref(item.githubUrl)}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  {isTeam ? 'Репозиторий проекта' : 'GitHub'}
+                </a>
+              </p>
+            ) : null}
             <h3 className="profile-stack-title">Стек технологий</h3>
             <div className="card-tags">
               {item.skills.map((skill) => (
