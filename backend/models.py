@@ -23,7 +23,7 @@ class User(Base):
     avatar_color: Mapped[str | None] = mapped_column(String(7))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                                  default=func.now())
-    github_irl: Mapped[str | None] = mapped_column(String(255))
+    github_url: Mapped[str | None] = mapped_column(String(255))
 
     listings: Mapped[list[Listing]] = relationship(back_populates="author", cascade="all, delete-orphan")
 
