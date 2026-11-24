@@ -5,7 +5,7 @@ import { BookmarkIcon } from './Icons'
 type ListingCardProps = {
   item: Listing
   saved: boolean
-  onSave: (id: number) => void
+  onSave: (id: string) => void
   onContact: (item: Listing) => void
 }
 
@@ -17,7 +17,7 @@ export function ListingCard({ item, saved, onSave, onContact }: ListingCardProps
   const preview = item.skills.slice(0, PREVIEW_SKILLS)
   const hiddenSkills = item.skills.length - preview.length
   const actionLabel = isTeam ? 'Откликнуться' : 'Позвать в команду'
-  const capTitle = isTeam ? item.project || item.role : item.name
+  const capTitle = isTeam ? item.role : item.name
   const capSub = isTeam ? `Ищут · ${item.role}` : item.role
 
   function openProfile() {
@@ -113,7 +113,7 @@ export function ListingCard({ item, saved, onSave, onContact }: ListingCardProps
           </div>
         </div>
 
-        <p className="card-chin">{item.badge}</p>
+        {item.badge ? <p className="card-chin">{item.badge}</p> : null}
       </article>
 
       <dialog
@@ -146,7 +146,6 @@ export function ListingCard({ item, saved, onSave, onContact }: ListingCardProps
               <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="4" width="12" height="9" rx="1.4" fill="none" stroke="currentColor" strokeWidth="1.4"/><path d="M6 4V3.2A1.2 1.2 0 0 1 7.2 2h1.6A1.2 1.2 0 0 1 10 3.2V4" fill="none" stroke="currentColor" strokeWidth="1.4"/></svg>
               {isTeam ? `Ищут · ${item.role}` : item.role}
             </p>
-            {isTeam && item.project ? <p className="card-title">{item.project}</p> : null}
             <h3 className="profile-stack-title">Стек технологий</h3>
             <div className="card-tags">
               {item.skills.map((skill) => (

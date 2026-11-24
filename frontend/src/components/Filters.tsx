@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { FORMAT_OPTIONS, STACK_GROUPS, UNIVERSITY_OPTIONS } from '../data/demoListings'
+import { FORMAT_OPTIONS, STACK_GROUPS, UNIVERSITY_OPTIONS } from '../data/catalogOptions'
 import type { FiltersState, SortOption } from '../types'
 import { SearchIcon } from './Icons'
 
@@ -53,7 +53,7 @@ export function Filters({ filters, countLabel, onChange, onReset }: FiltersProps
             </span>
             <input
               type="search"
-              placeholder="Имя, роль, проект или вуз"
+              placeholder="Имя, роль или вуз"
               aria-label="Поиск"
               value={filters.search}
               onChange={(event) => onChange({ ...filters, search: event.target.value })}
