@@ -15,10 +15,10 @@ export function Header({ view, login, onViewChange, onLogin, onRegister, onLogou
     <header className="mast">
       <div className="mast-body">
         <div className="mast-title">
-          <a className="wordmark" href="#discover" aria-label="Dream-Team — к каталогу">
-            <span className="wordmark-dream">dream</span>
+          <a className="wordmark" href="#discover" aria-label="Team-Up — к каталогу">
+            <span className="wordmark-dream">team</span>
             <span className="wordmark-rule" aria-hidden="true" />
-            <span className="wordmark-team">team</span>
+            <span className="wordmark-team">up</span>
           </a>
           <div className="mast-actions">
             {login ? (
