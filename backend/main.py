@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, HTTPException, status, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -25,6 +25,7 @@ app.include_router(listings.router, prefix="/listings", tags=["listings"])
 def health():
     return {'health': 'ok'}
 
+
 #-------------------------------------------
 # ---------------HANDLERS-------------------
 #-------------------------------------------
@@ -46,8 +47,6 @@ def general_http_exception_handler(request: Request, exception: StarletteHTTPExc
 #dead code at the moment
 @app.exception_handler(RequestValidationError)
 def validation_exception_handler(request: Request, exception: RequestValidationError):
-    if request.url.path.startswith("/api"):
-        return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            content={"detail": exception.errors()},
-        )
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        content={"detail": exception.errors()})

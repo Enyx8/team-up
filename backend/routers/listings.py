@@ -1,5 +1,8 @@
 import uuid
+from typing import Annotated
 
+import models as models
+from database import Base, engine, get_db
 from fastapi import HTTPException, Depends, status, APIRouter
 from listing_catalog import enrich_listings, enrich_one
 from schemas import (
@@ -11,10 +14,7 @@ from schemas import (
 )
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from typing import Annotated
-import models as models
-from database import Base, engine, get_db
-
+from auth import CurrentUser
 
 router = APIRouter()
 
@@ -53,9 +53,9 @@ def get_listings(db: Annotated[Session, Depends(get_db)]):
     response_model=ListingResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_listing(listing: ListingCreate, db: Annotated[Session, Depends(get_db)]):
+def create_listing(listing: ListingCreate, current_user: CurrentUser, db: Annotated[Session, Depends(get_db)]):
     new_listing = models.Listing(
-        author_id=listing.author_id,
+        author_id=current_user.id,
         type=listing.type,
         role_focus=listing.role_focus,
         bio=listing.bio,
@@ -76,11 +76,15 @@ def create_listing(listing: ListingCreate, db: Annotated[Session, Depends(get_db
 --------------------------
 """
 @router.put('/{listing_id}', response_model=ListingResponse)
-def update_listing_full(listing_data: ListingUpdateFull, listing_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]):
+def update_listing_full(listing_data: ListingUpdateFull, listing_id: uuid.UUID,
+                        current_user: CurrentUser, db: Annotated[Session, Depends(get_db)]):
     result = db.execute(select(models.Listing).where(models.Listing.id == listing_id))
     listing = result.scalars().first()
     if not listing:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
+
+    if listing.author_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Not authorized to edit this post')
 
     listing.type = listing_data.type
     listing.role_focus = listing_data.role_focus
@@ -94,11 +98,15 @@ def update_listing_full(listing_data: ListingUpdateFull, listing_id: uuid.UUID, 
     return listing
 
 @router.patch('/{listing_id}', response_model=ListingResponse)
-def update_listing_partial(listing_data: ListingUpdatePartial, listing_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]):
+def update_listing_partial(listing_data: ListingUpdatePartial, listing_id: uuid.UUID,
+                           current_user: CurrentUser,db: Annotated[Session, Depends(get_db)]):
     result = db.execute(select(models.Listing).where(models.Listing.id == listing_id))
     listing = result.scalars().first()
     if not listing:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
+
+    if listing.author_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Not authorized to edit this post')
 
     update_data = listing_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -114,11 +122,14 @@ def update_listing_partial(listing_data: ListingUpdatePartial, listing_id: uuid.
 --------------------------
 """
 @router.delete('/{listing_id}', status_code=status.HTTP_204_NO_CONTENT)
-def delete_listing(listing_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]):
+def delete_listing(listing_id: uuid.UUID, current_user: CurrentUser, db: Annotated[Session, Depends(get_db)]):
     result = db.execute(select(models.Listing).where(models.Listing.id == listing_id))
     listing = result.scalars().first()
     if not listing:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Listing not found")
+
+    if listing.author_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Not authorized to delete this post')
 
     db.delete(listing)
     db.commit()
